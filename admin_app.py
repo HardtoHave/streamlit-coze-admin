@@ -30,6 +30,29 @@ def run_async(coro):
     return asyncio.run_coroutine_threadsafe(coro, loop).result()
 
 
+async def deactivate_invite_and_user(invite_id: str, user_sys_uuid: str = None):
+    st.warning(f"正在停用邀请码 ID: {invite_id}...", icon="⏳")
+
+    try:
+        if user_sys_uuid:
+            user_to_delete = await AuthorizedUser.find_one(AuthorizedUser.sys_uuid == user_sys_uuid)
+            if user_to_delete:
+                await user_to_delete.delete()
+                st.success(f"✅ 成功删除关联用户授权信息 (UUID: {user_sys_uuid})。", icon="🗑️")
+            else:
+                st.info(f"ℹ️ 未找到关联的用户授权信息 (UUID: {user_sys_uuid})。", icon="🤷‍♀️")
+
+        invite_to_delete = await InvitationCode.find_one(InvitationCode.id == invite_id)
+        if invite_to_delete:
+            await invite_to_delete.delete()
+            st.success(f"✅ 成功删除邀请码 (Code: {invite_to_delete.code})。", icon="❌")
+        else:
+            st.error(f"❌ 未找到邀请码 ID: {invite_id}。", icon="🚫")
+        st.rerun()
+    except Exception as e:
+        st.error(f"❌ 停用操作失败: {e}", icon="🚨")
+
+
 # ---------- 1. 认证配置 ----------
 auth_config = {
     "credentials": {
@@ -91,21 +114,56 @@ if auth_status:
     # 3-3 显示邀请码列表
     st.subheader("📚 邀请码列表")
     invites = run_async(list_invites())
-    if invites:
-        df = pd.DataFrame([i.model_dump() for i in invites])
-        df["created_at"] = (
-            pd.to_datetime(df["created_at"], errors="coerce")
-            .dt.strftime("%Y-%m-%d %H:%M:%S")
-            .fillna("")
-        )
-        df["used_at"] = (
-            pd.to_datetime(df["used_at"], errors="coerce")
-            .dt.strftime("%Y-%m-%d %H:%M:%S")
-            .fillna("")
-        )
-        st.dataframe(df[["code", "status", "activated_by_sys_uuid", "created_at", "used_at"]])
-    else:
-        st.info("暂无邀请码")
+        if invites:
+        cols = st.columns([1, 1, 2, 2, 2, 1])
+        with cols[0]:
+            st.write("**邀请码**")
+        with cols[1]:
+            st.write("**状态**")
+        with cols[2]:
+            st.write("**激活用户UUID**")
+        with cols[3]:
+            st.write("**创建时间**")
+        with cols[4]:
+            st.write("**使用时间**")
+        with cols[5]:
+            st.write("**操作**")
+        for invite in invites:
+            col1, col2, col3, col4, col5, col6 = st.columns([1, 1, 2, 2, 2, 1])
+            with col1:
+                st.code(invite.code)  # 使用st.code显示邀请码，使其易于复制
+            with col2:
+                # 根据状态显示不同颜色
+                if invite.status == "active":
+                    st.success("🟢 活跃")
+                elif invite.status == "used":
+                    st.info("🔵 已使用")
+                else:
+                    st.error("🔴 未知")
+            with col3:
+                st.write(invite.activated_by_sys_uuid if invite.activated_by_sys_uuid else "N/A")
+            with col4:
+                st.write(
+                    pd.to_datetime(invite.created_at, errors="coerce").strftime("%Y-%m-%d %H:%M:%S")
+                    if invite.created_at else ""
+                )
+            with col5:
+                st.write(
+                    pd.to_datetime(invite.used_at, errors="coerce").strftime("%Y-%m-%d %H:%M:%S")
+                    if invite.used_at else ""
+                )
+            with col6:
+                # 只有在活跃或已使用状态下才显示停用按钮
+                if invite.status == "active" or invite.status == "used":
+                    if st.button("停用", key=f"deactivate_btn_{invite.id}", help="点击停用此邀请码并删除关联用户",
+                                 type="secondary"):
+                        # 运行异步删除操作
+                        run_async(deactivate_invite_and_user(invite.id, invite.activated_by_sys_uuid))
+                else:
+                    st.write("已停用")
+        else:
+            st.info("暂无邀请码", icon="📝")
+
 
     # 3-4 已激活用户
     st.header("👥 已激活用户")
