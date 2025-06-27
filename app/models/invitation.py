@@ -5,7 +5,7 @@ from beanie import Document, Indexed
 from pydantic import Field
 
 class InvitationCode(Document):
-    code: Indexed(str, unique=True)      # 唯一索引
+    code: Indexed(str, unique=True) 
     status: Literal["unused", "used"] = "unused"
     activated_by_sys_uuid: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
