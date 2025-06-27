@@ -1,6 +1,5 @@
 import streamlit as st
 
-# ⚠️ set_page_config 必须最先调用
 st.set_page_config(page_title="Coze Agent 后台管理", layout="wide")
 
 import asyncio
@@ -16,12 +15,11 @@ from app.models.invitation import InvitationCode
 from app.models.user import AuthorizedUser
 
 
-# ---------- 0. 单例事件循环 ----------
-@st.cache_resource(show_spinner=False)  # ✅ 新写法
+@st.cache_resource(show_spinner=False)
 def get_async_loop():
     loop = asyncio.new_event_loop()
     t = threading.Thread(target=loop.run_forever, daemon=True)
-    add_script_run_ctx(t)  # 让 Streamlit 识别后台线程
+    add_script_run_ctx(t) 
     t.start()
     return loop
 
