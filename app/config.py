@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings  # ✅ 旧版写在 pydantic 中，现在是单独包
+from pydantic_settings import BaseSettings  
 from pydantic import Field
 
 
