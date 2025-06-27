@@ -114,7 +114,7 @@ if auth_status:
     # 3-3 显示邀请码列表
     st.subheader("📚 邀请码列表")
     invites = run_async(list_invites())
-        if invites:
+    if invites:
         cols = st.columns([1, 1, 2, 2, 2, 1])
         with cols[0]:
             st.write("**邀请码**")
