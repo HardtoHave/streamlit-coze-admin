@@ -134,12 +134,10 @@ if auth_status:
                 st.code(invite.code)  # 使用st.code显示邀请码，使其易于复制
             with col2:
                 # 根据状态显示不同颜色
-                if invite.status == "active":
-                    st.success("🟢 活跃")
-                elif invite.status == "used":
-                    st.info("🔵 已使用")
-                else:
-                    st.error("🔴 未知")
+                if invite.status == "used":
+                    st.success("已使用")
+                elif invite.status == "unused":
+                    st.info("未使用")
             with col3:
                 st.write(invite.activated_by_sys_uuid if invite.activated_by_sys_uuid else "N/A")
             with col4:
